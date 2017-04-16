@@ -1,4 +1,3 @@
-print('init.lua ver 1.2')
 local config=require('config')
 wifi.setmode(wifi.STATION)
 print('set mode=STATION (mode='..wifi.getmode()..')')
@@ -17,7 +16,11 @@ end
 local telnet=require('telnet_srv')
 telnet.setupTelnetServer()
 
-local badkamer=require('badkamer')
+function startup()
+    local main=require('main')
+    main.mqtt_connect()
+end
+
 
 wifi.sta.eventMonReg(wifi.STA_WRONGPWD, function() node.restart() end)
 wifi.sta.eventMonReg(wifi.STA_APNOTFOUND, function() node.restart() end)
@@ -25,7 +28,7 @@ wifi.sta.eventMonReg(wifi.STA_FAIL, function() node.restart() end)
 wifi.sta.eventMonReg(wifi.STA_GOTIP, function()
     print("Network connected.")
     print("Waiting 5 seconds before starting main script.")
-    tmr.alarm(5,5000,0,badkamer.mqtt_connect)
+    tmr.alarm(5,5000,0,startup)
     tmr.alarm(6,25000,0,function() telnetServer:close() end)
 end)
 wifi.sta.eventMonStart()
