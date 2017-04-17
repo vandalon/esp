@@ -57,7 +57,7 @@ local function pin_states()
     for i,relayPin in ipairs(relayPins) do
         pin[i] = gpio.read(relayPin)
     end
-    return(string.format('Switch States: %s %s %s %s', table.concat(pin, ' ')))
+    return(string.format('Switch States: %s', table.concat(pin, ' ')))
 end
 
 local function mqtt_sub(topics)
