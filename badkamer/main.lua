@@ -4,7 +4,7 @@
 -- 2 = DHT
 -- 3 = Afzuiging
 -- 4 = Free
--- 5 = Free
+-- 5 = telnet server
 -- 6 = One shot telnet server on boot
 
 local _M={} 
@@ -115,12 +115,12 @@ m:on("message", function(client, topic, data)
     if data == 'EnableTelnet' and topic == string.format("home/%s/telnet", deviceID) and not telnetState() then
         print('Enabling telnet server')
         telnet.setupTelnetServer()
-        tmr.alarm(6,300000,0,function() telnet.telnetServer:close() end)
+        tmr.alarm(5,300000,0,function() telnet.telnetServer:close() end)
     end
     if data == 'DisableTelnet' and topic == string.format("home/%s/telnet", deviceID) and telnetState() then
         print('Disabling telnet server')
         telnet.telnetServer:close()
-        tmr.stop(6)
+        tmr.stop(5)
     end
     print(pin_states())
 end)
