@@ -90,7 +90,7 @@ local function switch(relayPin, state)
 end
 
 local function telnetState()
-    return telnet.telnetServer and telnet.telnetServer:getaddr()
+    return telnet.telnetServer:getaddr()
 end
 
 -- On publish message receive event
@@ -112,7 +112,7 @@ m:on("message", function(client, topic, data)
        mqtt_unsub(topic)
        init_state_sub[pin] = 1
     end
-    if data == 'EnableTelnet' and topic == string.format("home/%s/telnet", deviceID) and telnetState() == false then
+    if data == 'EnableTelnet' and topic == string.format("home/%s/telnet", deviceID) and not telnetState() then
         print('Enabling telnet server')
         telnet.setupTelnetServer()
         tmr.alarm(6,300000,0,function() telnet.telnetServer:close() end)
