@@ -16,7 +16,7 @@ end
 local telnet=require('telnet_srv')
 telnet.setupTelnetServer()
 
-function startup()
+local function startup()
     local main=require('main')
     main.mqtt_connect()
 end
