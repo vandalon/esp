@@ -60,9 +60,9 @@ local function pin_states()
     return(string.format('Switch States: %s %s %s %s', pin[1], pin[2], pin[3], pin[4]))
 end
 
-local function mqtt_sub(topic)
-    if(type(topic) == 'table') then
-        m:subscribe(topic,function()
+local function mqtt_sub(topics)
+    if(type(topics) == 'table') then
+        m:subscribe(topics,function()
             print("MQTT initial topics subscribed.")
         end)
     else
@@ -101,15 +101,15 @@ end
 m:on("message", function(client, topic, data)
     print(string.format("Received: %s: %s", topic , data))
     local pin,rest = string.match(topic,"switch/(%d+)(.*)")
-    if (rest and #rest > 0 and init_state_sub[pin] == 1) then return end
+    if rest and #rest > 0 and init_state_sub[pin] == 1 then return end
     local relayPin = tonumber(pin)
-    if (data == "ON" and valid_pin(relayPin)) then
+    if data == "ON" and valid_pin(relayPin) then
         switch(relayPin, gpio.LOW)
         if relayPin == suctionPin then
             print("Setting 1 hour timer for suction")
 	    tmr.alarm(3,3600000, tmr.ALARM_SINGLE, function() switch(suctionPin, gpio.HIGH) end)
         end
-    elseif (data == "OFF" and valid_pin(relayPin)) then
+    elseif data == "OFF" and valid_pin(relayPin) then
         switch(relayPin, gpio.HIGH)
     end
     if rest and #rest > 0 then
