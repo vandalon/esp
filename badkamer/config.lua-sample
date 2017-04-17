@@ -1,8 +1,8 @@
 return {
-  ssid = "SSID"
-  wifi_psk = "WifiPassW0rd"
-  ip = "192.168.1.6"
-  netmask = "255.255.255.0"
-  gateway = "192.168.1.1"
+  ssid = "SSID",
+  wifi_psk = "WifiPassW0rd",
+  ip = "192.168.1.6",
+  netmask = "255.255.255.0",
+  gateway = "192.168.1.1",
   deviceID = "badkamer"
 }
