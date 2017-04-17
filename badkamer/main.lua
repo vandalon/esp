@@ -93,6 +93,14 @@ local function switch(relayPin, state)
     mqtt_update(relayPin, state)
 end
 
+local function telnetState()
+    if telnet.telnetServer and telnet.telnetServer:getaddr() then 
+        return true
+    else
+        return false
+    end
+end
+
 -- On publish message receive event
 m:on("message", function(client, topic, data)
     print(string.format("Received: %s: %s", topic , data))
@@ -125,14 +133,6 @@ m:on("message", function(client, topic, data)
     print(pin_states())
 end)
  
-local function telnetState()
-    if telnet.telnetServer and telnet.telnetServer:getaddr() then 
-        return true
-    else
-        return false
-    end
-end
-
 local stop_hum
 local check_hum
 local prev_hum

@@ -33,7 +33,7 @@ function _M.setupTelnetServer()
     end
 
     
-    telnetServer = net.createServer(net.TCP, 180) 
-    telnetServer:listen(23, listenFun)
+    _M.telnetServer = net.createServer(net.TCP, 180) 
+    _M.telnetServer:listen(23, listenFun)
 end
 return _M
