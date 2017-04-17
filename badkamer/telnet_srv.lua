@@ -3,7 +3,7 @@
 --
 local _M = {}
 function _M.setupTelnetServer()
-    inUse = false
+    local inUse = false
     function listenFun(sock)
         if inUse then
             sock:send("Already in use.\n")
