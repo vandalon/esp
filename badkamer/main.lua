@@ -49,11 +49,7 @@ end
 
 local function mqtt_update(relayPin,state)
     local topic = string.format("switch/%s/state", relayPin)
-    if gpio.read(relayPin) == 1 then
-        mqtt_pub(topic,"OFF",0,1)
-    else
-        mqtt_pub(topic,"ON",0,1)
-    end
+    mqtt_pub(topic, gpio.read(relayPin) == 1 and 'OFF' or 'ON', 0, 1)
 end
 
 local function pin_states()
