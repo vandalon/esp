@@ -179,7 +179,7 @@ function _M.mqtt_connect()
         update_dht()
     end,
     function()
-        print("Can not connect restarting in 10 seconds...")
+        print("Can not connect, restarting in 10 seconds...")
         tmr.alarm(1, 10000, 0, function() node.restart() end)
     end)
     tmr.alarm(2,60000, tmr.ALARM_AUTO, update_dht)
