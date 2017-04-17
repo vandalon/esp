@@ -57,7 +57,7 @@ local function pin_states()
     for i,relayPin in ipairs(relayPins) do
         pin[i] = gpio.read(relayPin)
     end
-    return(string.format('Switch States: %s %s %s %s', pin[1], pin[2], pin[3], pin[4]))
+    return(string.format('Switch States: %s %s %s %s', table.concat(pin, ' ')))
 end
 
 local function mqtt_sub(topics)
@@ -90,11 +90,7 @@ local function switch(relayPin, state)
 end
 
 local function telnetState()
-    if telnet.telnetServer and telnet.telnetServer:getaddr() then 
-        return true
-    else
-        return false
-    end
+    return telnet.telnetServer and telnet.telnetServer:getaddr()
 end
 
 -- On publish message receive event
