@@ -4,12 +4,12 @@
 -- 2 = DHT
 -- 3 = Afzuiging
 -- 4 = Free
--- 5 = Free
+-- 5 = Telnet connection timeout
 -- 6 = One shot telnet server on boot
 
 local _M={} 
 local config = require('config')
-local telnet=require('telnet_srv')
+local telnet = require('telnet_srv')
 local mqttBroker = "192.168.1.12"
 local init_state_sub = {}
 local five_min_hum = {}
@@ -86,10 +86,6 @@ local function switch(relayPin, state)
     mqtt_update(relayPin, state)
 end
 
-local function telnetState()
-    return telnet.telnetServer:getaddr()
-end
-
 -- On publish message receive event
 m:on("message", function(client, topic, data)
     print(string.format("Received: %s: %s", topic , data))
@@ -100,7 +96,7 @@ m:on("message", function(client, topic, data)
         switch(relayPin, gpio.LOW)
         if relayPin == config.suctionPin then
             print("Setting 1 hour timer for suction")
-	    tmr.alarm(3,3600000, tmr.ALARM_SINGLE, function() switch(config.suctionPin, gpio.HIGH) end)
+            tmr.alarm(3,3600000, tmr.ALARM_SINGLE, function() switch(config.suctionPin, gpio.HIGH) end)
         end
     elseif data == "OFF" and valid_pin(relayPin) then
         switch(relayPin, gpio.HIGH)
@@ -109,15 +105,8 @@ m:on("message", function(client, topic, data)
        mqtt_unsub(topic)
        init_state_sub[pin] = 1
     end
-    if data == 'EnableTelnet' and topic == string.format("home/%s/telnet", deviceID) and not telnetState() then
-        print('Enabling telnet server')
+    if data == 'EnableTelnet' and topic == string.format("home/%s/telnet", deviceID) then
         telnet.setupTelnetServer()
-        tmr.alarm(6,300000,0,function() telnet.telnetServer:close() end)
-    end
-    if data == 'DisableTelnet' and topic == string.format("home/%s/telnet", deviceID) and telnetState() then
-        print('Disabling telnet server')
-        telnet.telnetServer:close()
-        tmr.stop(6)
     end
     print(pin_states())
 end)
@@ -149,10 +138,8 @@ local function update_dht()
     end
     prev_hum = hum
     local telnet
-    if telnetState() then telnet = 'Enabled' else telnet = 'Disabled' end
     mqtt_pub('temp', temp, 0, 0)
     mqtt_pub('humidity', hum, 0, 0)
-    mqtt_pub('Telnet', telnet, 0, 0)
     mqtt_pub('Uptime', tmr.time(), 0, 0)
     mqtt_pub('MemFree', node.heap(), 0, 0)
     if stop_hum then mqtt_pub('StopHum', stop_hum, 0, 0) end
