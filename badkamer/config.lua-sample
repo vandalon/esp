@@ -4,5 +4,7 @@ return {
   ip = "192.168.1.6",
   netmask = "255.255.255.0",
   gateway = "192.168.1.1",
-  deviceID = "badkamer"
+  deviceID = "badkamer",
+  relayPins = { 1,2,3,4 }
+  local suctionPin = 1
 }

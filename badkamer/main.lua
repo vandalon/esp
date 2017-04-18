@@ -16,17 +16,14 @@ local five_min_hum = {}
 local deviceID = config.deviceID
 
 -- Pin which the relay is connected to
--- 6 = wc licht, 7 = Afzuiging, 5 = Leeg, 0 = Nachtlamp
-local relayPins = { 6,7,5,0 }
-local suctionPin = 7
-for i,relayPin in ipairs(relayPins) do 
+for i,relayPin in ipairs(config.relayPins) do 
     gpio.mode(relayPin, gpio.OUTPUT)
     gpio.write(relayPin, gpio.HIGH)
 end
 
 
 local function valid_pin(pin)
-    for i,relayPin in ipairs(relayPins) do 
+    for i,relayPin in ipairs(config.relayPins) do 
         if pin == relayPin then
             return true
         end
@@ -54,7 +51,7 @@ end
 
 local function pin_states()
     local pin = {}
-    for i,relayPin in ipairs(relayPins) do
+    for i,relayPin in ipairs(config.relayPins) do
         pin[i] = gpio.read(relayPin)
     end
     return(string.format('Switch States: %s', table.concat(pin, ' ')))
@@ -101,9 +98,9 @@ m:on("message", function(client, topic, data)
     local relayPin = tonumber(pin)
     if data == "ON" and valid_pin(relayPin) then
         switch(relayPin, gpio.LOW)
-        if relayPin == suctionPin then
+        if relayPin == config.suctionPin then
             print("Setting 1 hour timer for suction")
-	    tmr.alarm(3,3600000, tmr.ALARM_SINGLE, function() switch(suctionPin, gpio.HIGH) end)
+	    tmr.alarm(3,3600000, tmr.ALARM_SINGLE, function() switch(config.suctionPin, gpio.HIGH) end)
         end
     elseif data == "OFF" and valid_pin(relayPin) then
         switch(relayPin, gpio.HIGH)
@@ -138,11 +135,11 @@ local function update_dht()
     mqtt_pub('avgHum', avg_hum, 0, 0)
     if prev_hum and stop_hum == nil and hum - prev_hum > 10 then
         stop_hum = prev_hum + 5
-        switch(suctionPin,gpio.LOW)
+        switch(config.suctionPin,gpio.LOW)
     end
     if stop_hum and avg_hum > stop_hum then check_hum = 1 end
     if stop_hum and check_hum and avg_hum <= stop_hum then
-        switch(suctionPin,gpio.HIGH)
+        switch(config.suctionPin,gpio.HIGH)
         tmr.stop(3)
         stop_hum = nil
         check_hum = nil
@@ -166,7 +163,7 @@ function _M.mqtt_connect()
     m:connect(mqttBroker, 1883, 0, function()
         print("MQTT connected to:" .. mqttBroker)
         local init_topic = {}
-        for i,relayPin in ipairs(relayPins) do
+        for i,relayPin in ipairs(config.relayPins) do
             init_topic[string.format("home/%s/switch/%s/state", deviceID, relayPin)] = 0
         end
         init_topic[string.format("home/%s/switch/+",deviceID)] = 0
