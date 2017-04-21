@@ -4,8 +4,8 @@
 -- 2 = DHT
 -- 3 = Afzuiging
 -- 4 = Free
--- 5 = Telnet connection timeout
--- 6 = One shot telnet server on boot
+-- 5 = Telnet Idle Timeout
+-- 6 = Telnet Server Timeout
 
 local _M={} 
 local config = require('config')
@@ -108,6 +108,7 @@ m:on("message", function(client, topic, data)
     if data == 'EnableTelnet' and topic == string.format("home/%s/telnet", deviceID) then
         telnet.setupTelnetServer()
     end
+    if topic == string.format("home/%s/uptime", deviceID) then tmr.softwd(120) end
     print(pin_states())
 end)
  
@@ -140,8 +141,8 @@ local function update_dht()
     local telnet
     mqtt_pub('temp', temp, 0, 0)
     mqtt_pub('humidity', hum, 0, 0)
-    mqtt_pub('Uptime', tmr.time(), 0, 0)
-    mqtt_pub('MemFree', node.heap(), 0, 0)
+    mqtt_pub('uptime', tmr.time(), 0, 0)
+    mqtt_pub('memfree', node.heap(), 0, 0)
     if stop_hum then mqtt_pub('StopHum', stop_hum, 0, 0) end
     if prev_hum then mqtt_pub('PrevHum', prev_hum, 0, 0) end
 end
@@ -155,6 +156,7 @@ function _M.mqtt_connect()
         end
         init_topic[string.format("home/%s/switch/+",deviceID)] = 0
         init_topic[string.format("home/%s/telnet",deviceID)] = 0
+        init_topic[string.format("home/%s/uptime",deviceID)] = 0
         mqtt_sub(init_topic)
         update_dht()
     end,
