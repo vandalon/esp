@@ -3,7 +3,7 @@
 -- 1 = Online Check
 -- 2 = Free
 -- 3 = Free
--- 4 = Watchdog
+-- 4 = Uptime publisher
 -- 5 = Telnet Idle Timeout
 -- 6 = Telnet Server Timeout
 
@@ -104,6 +104,7 @@ m:on("message", function(client, topic, data)
     if data == 'EnableTelnet' and topic == string.format("home/%s/telnet", deviceID) then
         telnet.setupTelnetServer()
     end
+    if topic == string.format("home/%s/uptime", deviceID) then tmr.softwd(120) end
     print(pin_states())
 end)
 
@@ -123,13 +124,14 @@ function _M.mqtt_connect()
         end
         init_topic[string.format("home/%s/switch/+",deviceID)] = 0
         init_topic[string.format("home/%s/telnet",deviceID)] = 0
+        init_topic[string.format("home/%s/uptime",deviceID)] = 0
         mqtt_sub(init_topic)
         motionDetect()
     end,
     function()
         print("Can not connect, restarting in 10 seconds...")
         tmr.alarm(1, 10000, 0, function() node.restart() end)
-        tmr.alarm(4, 60000, tmr.ALARM_AUTO, function() tmr.softwd(120) end)
+        tmr.alarm(4,60000, tmr.ALARM_AUTO, function() mqtt_pub('uptime', tmr.time(), 0, 0) end)
     end)
 end
 
