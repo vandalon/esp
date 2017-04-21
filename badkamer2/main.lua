@@ -3,9 +3,9 @@
 -- 1 = Online Check
 -- 2 = Free
 -- 3 = Free
--- 4 = Free
--- 5 = Telnet connection timeout
--- 6 = One shot telnet server on boot
+-- 4 = Watchdog
+-- 5 = Telnet Idle Timeout
+-- 6 = Telnet Server Timeout
 
 local _M={} 
 local config = require('config')
@@ -129,6 +129,7 @@ function _M.mqtt_connect()
     function()
         print("Can not connect, restarting in 10 seconds...")
         tmr.alarm(1, 10000, 0, function() node.restart() end)
+        tmr.alarm(4, 60000, tmr.ALARM_AUTO, function() tmr.softwd(120) end)
     end)
 end
 
