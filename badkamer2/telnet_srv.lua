@@ -33,7 +33,6 @@ function _M.setupTelnetServer()
             node.output(nil)
             inUse = false
             tmr.unregister(5)
-            stopTelnetServer()
         end
 
         node.output(s_output, 1)
