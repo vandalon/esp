@@ -143,8 +143,8 @@ local function update_dht()
     mqtt_pub('humidity', hum, 0, 0)
     mqtt_pub('uptime', tmr.time(), 0, 0)
     mqtt_pub('memfree', node.heap(), 0, 0)
-    if stop_hum then mqtt_pub('StopHum', stop_hum, 0, 0) end
-    if prev_hum then mqtt_pub('PrevHum', prev_hum, 0, 0) end
+    if stop_hum then mqtt_pub('stophum', stop_hum, 0, 0) end
+    if prev_hum then mqtt_pub('prevhum', prev_hum, 0, 0) end
 end
 
 function _M.mqtt_connect()
