@@ -126,6 +126,7 @@ local function update_dht()
     if prev_hum and stop_hum == nil and hum - prev_hum > 10 then
         stop_hum = prev_hum + 5
         switch(config.suctionPin,gpio.LOW)
+        tmr.alarm(3,3600000, tmr.ALARM_SINGLE, function() switch(config.suctionPin, gpio.HIGH) end)
     end
     if stop_hum and avg_hum > stop_hum then check_hum = 1 end
     if stop_hum and check_hum and avg_hum <= stop_hum then
