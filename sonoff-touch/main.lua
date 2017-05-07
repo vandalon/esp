@@ -1,8 +1,8 @@
 -- Timers
 -- 0 = Free
 -- 1 = Online Check
--- 2 = Free
--- 3 = Free
+-- 2 = Uptime Check
+-- 3 = Long Press
 -- 4 = Free
 -- 5 = Telnet Idle Timeout
 -- 6 = Telnet Server Timeout
@@ -17,12 +17,14 @@ local relayPin = 6
 local wifiLed = 7
 local button = 3
 local press = nil
+local lastPress = nil
 
 local m = mqtt.Client(string.gsub(wifi.sta.getmac(),':',''), 60)
 m:on("offline", function(client)
     print("MQTT offline, restarting in 10 seconds.")
     gpio.write(wifiLed, gpio.HIGH)
-    tmr.alarm(1, 10000, 0, function()
+    local restartTimer = tmr.create()
+    tmr.alarm(restartTimer, 10000, 0, function()
         node.restart();
     end)
 end)
@@ -57,21 +59,22 @@ local function mqtt_unsub(topic)
 end
 
 -- On publish message receive event
+local blinkingLed = tmr.create()
 m:on("message", function(client, topic, data)
-    -- print(string.format("Received: %s: %s", topic , data))
+    print(string.format("Received: %s: %s", topic , data))
     if topic == string.format("home/%s/switch", deviceID) then
        if data == 'ON' then gpio.write(relayPin, gpio.HIGH)
        else gpio.write(relayPin, gpio.LOW) end
     end
     if topic == "home/badkamer/switch/7/state"  then
-        if topic == "ON" then
-            tmr.alarm(4, 250, tmr.ALARM_AUTO, function() 
-                gpio.write(wifiPin, gpio.HIGH)
-	        tmr.alarm(0, 250, 0, function() gpio.write(wifiLed, gpio.LOW) end)
+        if data == "ON" then
+            tmr.alarm(blinkingLed, 250, tmr.ALARM_AUTO, function()
+                if gpio.read(wifiLed) == gpio.LOW then gpio.write(wifiLed, gpio.HIGH)
+                else gpio.write(wifiLed, gpio.LOW) end
             end)
         else
-            tmr.stop(4)
-            gpio.write(wifiPin, gpio.LOW)
+            tmr.stop(blinkingLed)
+            gpio.write(wifiLed, gpio.LOW)
         end
     end
     if data == 'EnableTelnet' and topic == string.format("home/%s/telnet", deviceID) then
@@ -80,26 +83,36 @@ m:on("message", function(client, topic, data)
     if topic == string.format("home/%s/uptime", deviceID) then tmr.softwd(120) end
 end)
 
+local shortPressTimeout = tmr.create()
 local function buttonDetect()
     gpio.mode(button, gpio.INT)
     gpio.trig(button, "both", function()
         if gpio.read(button) == 0 then 
+            gpio.write(wifiLed, gpio.HIGH)
             gpio.write(relayPin, gpio.HIGH)
-            press = 'short'
-            tmr.alarm(3, 1000, 0, function()
-                press = 'long'
-                mqtt_pub('state', press , 0, 0)
-                gpio.write(wifiLed, gpio.HIGH)
-                gpio.write(relayPin, gpio.LOW)
-                tmr.alarm(0, 250, 0, function() gpio.write(wifiLed, gpio.LOW) end)
-            end)
+            if (lastPress and ((tmr.now() - lastPress) < 300000) or (tmr.now() < 300000 and
+              (tmr.now() - lastpress + 2147483648) < 500000)) then
+                press = 'double'
+             else
+                press = 'short'
+                tmr.alarm(3, 1000, 0, function()
+                    press = 'long'
+                    mqtt_pub('state', press , 0, 0)
+                    gpio.write(relayPin, gpio.LOW)
+                    gpio.write(wifiLed, gpio.LOW)
+                end)
+            end
+            lastPress = tmr.now()
         end
         if gpio.read(button) == 1 then
-            if press == 'short' then mqtt_pub('state', press , 0, 0) end
+            tmr.alarm(shortPressTimeout, 300, 0, function() 
+                if press ~= 'long' then
+                    mqtt_pub('state', press , 0, 0)
+                end
+            end)
             tmr.stop(3)
-            gpio.write(wifiLed, gpio.HIGH)
+            gpio.write(wifiLed, gpio.LOW)
             gpio.write(relayPin, gpio.LOW)
-            tmr.alarm(0, 250, 0, function() gpio.write(wifiLed, gpio.LOW) end)
         end
     end)
 end 
@@ -114,12 +127,14 @@ function _M.mqtt_connect()
         init_topic[string.format("home/%s/telnet",deviceID)] = 0
         init_topic[string.format("home/%s/uptime",deviceID)] = 0
         mqtt_sub(init_topic)
-        tmr.alarm(2, 60000, tmr.ALARM_AUTO, function() mqtt_pub('uptime', tmr.time(), 0, 0) end)
+        local uptimeTimer = tmr.create()
+        tmr.alarm(uptimeTimer, 60000, tmr.ALARM_AUTO, function() mqtt_pub('uptime', tmr.time(), 0, 0) end)
         buttonDetect()
     end,
     function()
         print("Can not connect, restarting in 10 seconds...")
-        tmr.alarm(1, 10000, 0, function() node.restart() end)
+        local restartTimer = tmr.create()
+        tmr.alarm(restartTimer, 10000, 0, function() node.restart() end)
     end)
 end
 
