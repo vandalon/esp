@@ -2,6 +2,7 @@
 -- setup a telnet server that hooks the sockets input
 --
 local _M = {}
+local config = require('config')
 local telnetServer = net.createServer(net.TCP, 10)
 
 function _M.setupTelnetServer()
@@ -49,7 +50,7 @@ function _M.setupTelnetServer()
 
         sock:on("disconnection",function(sock) disconnect(sock) end)
 
-        sock:send("Welcome to NodeMCU world.\n> ")
+        sock:send(config.deviceID .. "\n")
         telnetSocket = sock
     end
 
@@ -59,7 +60,7 @@ function _M.setupTelnetServer()
     else
         print('Enabling telnet server')
         telnetServer:listen(23, listenTelnet)
-        tmr.alarm(6,60000,0,stopTelnetServer)
+        tmr.alarm(6,300000,0,stopTelnetServer)
     end
 end
 

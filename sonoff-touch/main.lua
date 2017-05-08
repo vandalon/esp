@@ -1,12 +1,3 @@
--- Timers
--- 0 = Free
--- 1 = Online Check
--- 2 = Uptime Check
--- 3 = Long Press
--- 4 = Free
--- 5 = Telnet Idle Timeout
--- 6 = Telnet Server Timeout
-
 local _M={} 
 local config = require('config')
 local telnet = require('telnet_srv')
@@ -16,8 +7,8 @@ local deviceID = config.deviceID
 local relayPin = 6
 local wifiLed = 7
 local button = 3
-local press = nil
-local lastPress = nil
+local touch = nil
+local lastTouch = nil
 
 local m = mqtt.Client(string.gsub(wifi.sta.getmac(),':',''), 60)
 m:on("offline", function(client)
@@ -83,34 +74,35 @@ m:on("message", function(client, topic, data)
     if topic == string.format("home/%s/uptime", deviceID) then tmr.softwd(120) end
 end)
 
-local shortPressTimeout = tmr.create()
+local shortTouchTimeout = tmr.create()
+local longTouchTimeout = tmr.create()
 local function buttonDetect()
     gpio.mode(button, gpio.INT)
     gpio.trig(button, "both", function()
         if gpio.read(button) == 0 then 
             gpio.write(wifiLed, gpio.HIGH)
             gpio.write(relayPin, gpio.HIGH)
-            if (lastPress and ((tmr.now() - lastPress) < 300000) or (tmr.now() < 300000 and
-              (tmr.now() - lastpress + 2147483648) < 500000)) then
-                press = 'double'
+            if (lastTouch and ((tmr.now() - lastTouch) < 300000) or (tmr.now() < 300000 and
+              (tmr.now() - lastTouch + 2147483648) < 500000)) then
+                touch = 'double'
              else
-                press = 'short'
-                tmr.alarm(3, 1000, 0, function()
-                    press = 'long'
-                    mqtt_pub('state', press , 0, 0)
+                touch = 'short'
+                tmr.alarm(longTouchTimeout, 1000, 0, function()
+                    touch = 'long'
                     gpio.write(relayPin, gpio.LOW)
                     gpio.write(wifiLed, gpio.LOW)
                 end)
             end
-            lastPress = tmr.now()
+            mqtt_pub('state', touch , 0, 0)
+            lastTouch = tmr.now()
         end
         if gpio.read(button) == 1 then
-            tmr.alarm(shortPressTimeout, 300, 0, function() 
-                if press ~= 'long' then
-                    mqtt_pub('state', press , 0, 0)
+            tmr.alarm(shortTouchTimeout, 300, 0, function() 
+                if touch == 'short' then
+                    mqtt_pub('state', touch , 0, 0)
                 end
             end)
-            tmr.stop(3)
+            tmr.stop(longTouchTimeout)
             gpio.write(wifiLed, gpio.LOW)
             gpio.write(relayPin, gpio.LOW)
         end
