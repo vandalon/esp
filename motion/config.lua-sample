@@ -1,10 +1,9 @@
 return {
   ssid = "ssid",
   wifi_psk = "WifiP4ssw0rd",
-  ip = "192.168.1.7",
+  ip = "192.168.1.4",
   netmask = "255.255.255.0",
   gateway = "192.168.1.1",
-  deviceID = "badkamer2",
-  relayPins = { 1,2,5,6 },
+  deviceID = "keuken",
   pirPin = 4
 }
