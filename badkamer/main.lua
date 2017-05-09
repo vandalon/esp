@@ -88,7 +88,7 @@ end
 
 -- On publish message receive event
 m:on("message", function(client, topic, data)
-    print(string.format("Received: %s: %s", topic , data))
+    -- print(string.format("Received: %s: %s", topic , data))
     local pin,rest = string.match(topic,"switch/(%d+)(.*)")
     if rest and #rest > 0 and init_state_sub[pin] == 1 then return end
     local relayPin = tonumber(pin)

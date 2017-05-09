@@ -82,18 +82,19 @@ local function buttonDetect()
         if gpio.read(button) == 0 then 
             gpio.write(wifiLed, gpio.HIGH)
             gpio.write(relayPin, gpio.HIGH)
+            touch = 'short'
             if (lastTouch and ((tmr.now() - lastTouch) < 300000) or (tmr.now() < 300000 and
               (tmr.now() - lastTouch + 2147483648) < 500000)) then
                 touch = 'double'
-             else
-                touch = 'short'
+                mqtt_pub('state', touch , 0, 0)
+            else
                 tmr.alarm(longTouchTimeout, 1000, 0, function()
                     touch = 'long'
+                    mqtt_pub('state', touch , 0, 0)
                     gpio.write(relayPin, gpio.LOW)
                     gpio.write(wifiLed, gpio.LOW)
                 end)
             end
-            mqtt_pub('state', touch , 0, 0)
             lastTouch = tmr.now()
         end
         if gpio.read(button) == 1 then
