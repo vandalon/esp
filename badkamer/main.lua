@@ -125,8 +125,10 @@ local function update_dht()
     mqtt_pub('avgHum', avg_hum, 0, 0)
     if (prev_hum and stop_hum == nil and hum > 50 and hum - prev_hum > 9) or (stop_hum == nil and hum > 90) then
         stop_hum = prev_hum + 5
+        if stop_hum < 60 then stop_hum = 60 end
+        if stop_hum > 90 then stop_hum = 90 end
         switch(config.suctionPin,gpio.LOW)
-        tmr.alarm(3,3600000, tmr.ALARM_SINGLE, function() switch(config.suctionPin, gpio.HIGH) end)
+        tmr.alarm(3,1800000, tmr.ALARM_SINGLE, function() switch(config.suctionPin, gpio.HIGH) end)
     end
     if stop_hum and avg_hum > stop_hum then check_hum = 1 end
     if (stop_hum and check_hum and avg_hum <= stop_hum) or hum < 50 then

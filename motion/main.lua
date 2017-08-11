@@ -14,14 +14,14 @@ local mqttBroker = "192.168.1.12"
 local init_state_sub = {}
 local deviceID = config.deviceID
 local pirPin = config.pirPin
+mqtt_connected = 0
 
 local m = mqtt.Client(string.gsub(wifi.sta.getmac(),':',''), 60)
-m:on("connect", function(client) print ("connected") end)
-m:on("offline", function(client)
-    print("MQTT offline, restarting in 10 seconds.")
-    tmr.alarm(1, 10000, 0, function()
-        node.restart();
-    end)
+
+m:on("connect", function(client)
+    mqtt_connected = 1
+    print ("connected")
+    if tmr.state(1) then tmr.unregister(1) end
 end)
  
 local function mqtt_pub(item, value, qos, retain)
@@ -60,7 +60,12 @@ local function motionDetect()
 end
 
 function _M.mqtt_connect()
+    if mqtt_connected == 1 then 
+        print("MQTT already initialized")
+        return
+    end
     m:connect(mqttBroker, 1883, 0, function()
+        mqtt_connected = 1
         print("MQTT connected to:" .. mqttBroker)
         local init_topic = {}
         init_topic[string.format("home/%s/telnet",deviceID)] = 0
@@ -70,9 +75,15 @@ function _M.mqtt_connect()
         motionDetect()
     end,
     function()
-        print("Can not connect, restarting in 10 seconds...")
-        tmr.alarm(1, 10000, 0, function() node.restart() end)
+        print("Can not connect, restarting in 5 seconds...")
+        tmr.alarm(1, 5000, 0, function() node.restart() end)
     end)
 end
+
+m:on("offline", function(client)
+    mqtt_connected = 0
+    print("MQTT offline, reconnecting...")
+    tmr.alarm(1,1000, 0, function() _M.mqtt_connect() end)
+end)
 
 return _M
