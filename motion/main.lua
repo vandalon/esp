@@ -71,7 +71,10 @@ function _M.mqtt_connect()
         init_topic[string.format("home/%s/telnet",deviceID)] = 0
         init_topic[string.format("home/%s/uptime",deviceID)] = 0
         mqtt_sub(init_topic)
-        tmr.alarm(4, 60000, tmr.ALARM_AUTO, function() mqtt_pub('uptime', tmr.time(), 0, 0) end)
+        tmr.alarm(4, 60000, tmr.ALARM_AUTO, function() 
+            mqtt_pub('uptime', tmr.time(), 0, 0) 
+            mqtt_pub('memory', node.heap(), 0, 0)
+        end)
         motionDetect()
     end,
     function()

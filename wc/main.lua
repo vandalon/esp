@@ -19,6 +19,7 @@ mqtt_connected = 0
 -- Pin which the relay is connected to
 for i,relayPin in ipairs(config.relayPins) do 
     gpio.mode(relayPin, gpio.OUTPUT)
+    gpio.write(relayPin, gpio.LOW)
 end
 
 local function valid_pin(pin)
@@ -74,7 +75,7 @@ local function switch(relayPin, state)
     local power
     if state == 1 then
         power = "ON"
-        if not tmr.state(3) then tmr.alarm(3, 60000, tmr.ALARM_SINGLE, function() switch(relayPin,0) end) end
+        if not tmr.state(3) then tmr.alarm(3, 300000, tmr.ALARM_SINGLE, function() switch(relayPin,0) end) end
         print("Enabling Output")
     end
     if state == 0 then
@@ -115,7 +116,7 @@ local function motionDetect()
             switch(4,1)
             if tmr.state(3) then tmr.stop(3) end
         else
-            tmr.alarm(3, 60000, tmr.ALARM_SINGLE, function() switch(relayPin,0) end)
+            tmr.alarm(3, 300000, tmr.ALARM_SINGLE, function() switch(4,0) end)
         end
     end)
 end
