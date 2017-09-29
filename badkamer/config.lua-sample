@@ -7,4 +7,5 @@ return {
   deviceID = "badkamer",
   relayPins = { 1,2,3,4 }
   suctionPin = 1
+  dhtPin = 4
 }
