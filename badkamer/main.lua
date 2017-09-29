@@ -116,7 +116,7 @@ local stop_hum
 local check_hum
 local prev_hum
 local function update_dht()
-    local _, temp, hum = dht.read(dhtPin)
+    local _, temp, hum = dht.read(config.dhtPin)
     table.insert(five_min_hum, hum)
     local avg_hum = 0
     for i,v in pairs(five_min_hum) do
