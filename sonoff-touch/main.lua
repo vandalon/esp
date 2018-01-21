@@ -76,6 +76,13 @@ end)
 
 local shortTouchTimeout = tmr.create()
 local longTouchTimeout = tmr.create()
+local buttonResetTimeout = tmr.create()
+local function buttonReset()
+    tmr.alarm(buttonResetTimeout, 500, 0, function()
+        mqtt_pub('state', 'none', 0, 0)
+    end)
+end
+
 local function buttonDetect()
     gpio.mode(button, gpio.INT)
     gpio.trig(button, "both", function()
@@ -89,12 +96,14 @@ local function buttonDetect()
             if touchDelta > 150000 and touchDelta < 300000 then
                 touch = 'double'
                 mqtt_pub('state', touch , 0, 0)
+		buttonReset()
             else
                 tmr.alarm(longTouchTimeout, 1000, 0, function()
                     touch = 'long'
                     mqtt_pub('state', touch , 0, 0)
                     gpio.write(relayPin, gpio.LOW)
                     gpio.write(wifiLed, gpio.LOW)
+		    buttonReset()
                 end)
             end
             lastTouch = tmr.now()
@@ -103,6 +112,7 @@ local function buttonDetect()
             tmr.alarm(shortTouchTimeout, 300, 0, function() 
                 if touch == 'short' then
                     mqtt_pub('state', touch , 0, 0)
+		    buttonReset()
                 end
             end)
             tmr.stop(longTouchTimeout)

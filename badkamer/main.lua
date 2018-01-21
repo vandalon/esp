@@ -86,6 +86,9 @@ local function switch(relayPin, state)
     mqtt_update(relayPin, state)
 end
 
+local stop_hum
+local check_hum
+local prev_hum
 -- On publish message receive event
 m:on("message", function(client, topic, data)
     -- print(string.format("Received: %s: %s", topic , data))
@@ -95,11 +98,25 @@ m:on("message", function(client, topic, data)
     if data == "ON" and valid_pin(relayPin) then
         switch(relayPin, gpio.LOW)
         if relayPin == config.suctionPin then
+            if prev_hum then
+        	stop_hum = prev_hum + 5
+                if stop_hum < 60 then stop_hum = 60 end
+                if stop_hum > 90 then stop_hum = 80 end
+	    end
             print("Setting 1 hour timer for suction")
-            tmr.alarm(3,3600000, tmr.ALARM_SINGLE, function() switch(config.suctionPin, gpio.HIGH) end)
+            tmr.alarm(3,3600000, tmr.ALARM_SINGLE, function()
+		switch(config.suctionPin, gpio.HIGH) 
+                stop_hum = nil
+                check_hum = nil
+	    end)
         end
     elseif data == "OFF" and valid_pin(relayPin) then
         switch(relayPin, gpio.HIGH)
+        if relayPin == config.suctionPin then
+            stop_hum = nil
+            check_hum = nil
+            tmr.stop(3)
+	end
     end
     if rest and #rest > 0 then
        mqtt_unsub(topic)
@@ -109,12 +126,9 @@ m:on("message", function(client, topic, data)
         telnet.setupTelnetServer()
     end
     if topic == string.format("home/%s/uptime", deviceID) then tmr.softwd(120) end
-    print(pin_states())
+    -- print(pin_states())
 end)
  
-local stop_hum
-local check_hum
-local prev_hum
 local function update_dht()
     local _, temp, hum = dht.read(config.dhtPin)
     table.insert(five_min_hum, hum)
@@ -123,20 +137,17 @@ local function update_dht()
         avg_hum = avg_hum + v / #five_min_hum
     end
     mqtt_pub('avgHum', avg_hum, 0, 0)
+    --[[
     if (prev_hum and stop_hum == nil and hum > 50 and hum - prev_hum > 9) or (stop_hum == nil and hum > 90) then
         stop_hum = prev_hum + 5
         if stop_hum < 60 then stop_hum = 60 end
         if stop_hum > 90 then stop_hum = 90 end
         switch(config.suctionPin,gpio.LOW)
-        tmr.alarm(3,2700000, tmr.ALARM_SINGLE, function() switch(config.suctionPin, gpio.HIGH) end)
+        tmr.alarm(3,3600000, tmr.ALARM_SINGLE, function() switch(config.suctionPin, gpio.HIGH) end)
     end
-    if stop_hum and avg_hum > stop_hum then check_hum = 1 end
-    if (stop_hum and check_hum and avg_hum <= stop_hum) or hum < 60 then
-        switch(config.suctionPin,gpio.HIGH)
-        tmr.stop(3)
-        stop_hum = nil
-        check_hum = nil
-    end
+    --]]
+    if (stop_hum and avg_hum > stop_hum) or (stop_hum and stop_hum - avg_hum > 10) then check_hum = 1 end
+    if (stop_hum and check_hum and avg_hum <= stop_hum) or hum < 60 then switch(config.suctionPin,gpio.HIGH) end
     if five_min_hum[5] then
         table.remove(five_min_hum,1)
     end

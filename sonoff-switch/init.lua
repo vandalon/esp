@@ -4,7 +4,7 @@ gpio.mode(7, gpio.OUTPUT)
 gpio.write(7, gpio.HIGH)
 local config=require('config')
 
-local telnet=require('telnet_srv')
+telnet=require('telnet_srv')
 telnet.setupTelnetServer()
 
 local function startup()
