@@ -1,7 +1,7 @@
 local _M={} 
 local config = require('config')
 local telnet = require('telnet_srv')
-local mqttBroker = "192.168.1.12"
+local mqttBroker = "192.168.0.15"
 local init_state_sub = {}
 local deviceID = config.deviceID
 local relayPin = 6
