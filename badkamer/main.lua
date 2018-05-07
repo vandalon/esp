@@ -14,6 +14,7 @@ local mqttBroker = "192.168.0.15"
 local init_state_sub = {}
 local five_min_hum = {}
 local deviceID = config.deviceID
+local motionPin = config.motionPin
 
 -- Pin which the relay is connected to
 for i,relayPin in ipairs(config.relayPins) do 
@@ -161,6 +162,30 @@ local function update_dht()
     if prev_hum then mqtt_pub('prevhum', prev_hum, 0, 0) end
 end
 
+local function motionDetect()
+    local motion = 0
+    gpio.mode(motionPin, gpio.INT)
+    gpio.trig(motionPin, "both", function()
+        mqtt_pub("motion", string.format("trigger-%s", gpio.read(motionPin)), 0, 0)
+	if gpio.read(motionPin) == 1 then
+	    -- tmr.alarm(4, 3000, 0, function() 
+	        if gpio.read(motionPin)  == 1 and motion == 0 then
+                    mqtt_pub("motion", 1 , 0, 0)
+		    tmr.stop(5)
+		    motion = 1
+	        end
+	    -- end)
+	else
+	    tmr.alarm(5, 10000, 0 , function()
+                if motion == 1 then
+	            mqtt_pub("motion", 0 , 0, 0)
+		    motion = 0
+	        end
+	    end)
+        end
+    end)
+end
+
 function _M.mqtt_connect()
     m:connect(mqttBroker, 1883, 0, function()
         print("MQTT connected to:" .. mqttBroker)
@@ -173,6 +198,7 @@ function _M.mqtt_connect()
         init_topic[string.format("home/%s/uptime",deviceID)] = 0
         mqtt_sub(init_topic)
         update_dht()
+        motionDetect()
     end,
     function()
         print("Can not connect, restarting in 10 seconds...")

@@ -9,6 +9,7 @@ local function startup()
     main.mqtt_connect()
 end
 
+wifi.setphymode(wifi.PHYMODE_N)
 wifi.setmode(wifi.STATION)
 print('set mode=STATION (mode='..wifi.getmode()..')')
 print('MAC: ',wifi.sta.getmac())

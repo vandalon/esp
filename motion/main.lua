@@ -45,7 +45,7 @@ end
 
 -- On publish message receive event
 m:on("message", function(client, topic, data)
-    print(string.format("Received: %s: %s", topic , data))
+    -- print(string.format("Received: %s: %s", topic , data))
     if data == 'EnableTelnet' and topic == string.format("home/%s/telnet", deviceID) then
         telnet.setupTelnetServer()
     end
@@ -53,9 +53,19 @@ m:on("message", function(client, topic, data)
 end)
 
 local function motionDetect()
+    local motion = 0
     gpio.mode(pirPin, gpio.INT)
     gpio.trig(pirPin, "both", function()
-        mqtt_pub("motion", gpio.read(pirPin) , 0, 0)
+ 	mqtt_pub("motion", string.format("trg-%s", gpio.read(pirPin)) , 0, 0)
+	if gpio.read(pirPin) == 1 then
+            mqtt_pub("motion", 1 , 0, 0)
+	    motion = 1
+	else
+            tmr.alarm(3, 10000, 0, function()
+	        mqtt_pub("motion", 0 , 0, 0)
+	        motion = 0
+	    end)
+	end
     end)
 end
 
